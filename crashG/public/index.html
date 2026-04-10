@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="description" content="DEFTECH – India's premier online portal for defence education and technology. Learn about DRDO, missile systems, radar, military ranks, and future defence tech."/>
+<title>DEFTECH – India Defence Education &amp; Technology Portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Share+Tech+Mono&family=Exo+2:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="/css/style.css"/>
+</head>
+<body>
+
+<!-- ═══ TOAST ════════════════════════════════════════════════ -->
+<div class="toast" id="toast"></div>
+
+<!-- ═══ NAV ══════════════════════════════════════════════════ -->
+<nav id="main-nav" class="hidden">
+  <div class="nav-brand" onclick="goPage('home')">
+    <span>DT</span>DEFTECH
+  </div>
+  <div class="nav-links" id="nav-links">
+    <a onclick="goPage('home')" data-page="home">Home</a>
+    <a onclick="goPage('about')" data-page="about">About</a>
+    <a onclick="goPage('courses')" data-page="courses">Courses</a>
+    <a onclick="goPage('dashboard')" data-page="dashboard">Dashboard</a>
+    <div class="nav-user">
+      <div class="nav-avatar" id="nav-avatar">?</div>
+      <span id="nav-username"></span>
+    </div>
+    <a onclick="logout()" class="nav-logout">Logout</a>
+  </div>
+  <div class="hamburger" onclick="toggleMenu()"><span></span><span></span><span></span></div>
+</nav>
+
+<!-- ═══ AUTH PAGE ════════════════════════════════════════════ -->
+<div class="page active" id="page-auth">
+  <div class="auth-page">
+    <div class="auth-orb auth-orb1"></div>
+    <div class="auth-orb auth-orb2"></div>
+    <div class="auth-split">
+
+      <!-- LEFT PANEL -->
+      <div class="auth-left">
+        <div class="auth-left-brand">⚡ DEFTECH</div>
+        <div class="auth-left-tag">INDIA DEFENCE EDUCATION PORTAL</div>
+        <div class="auth-feature">
+          <div class="auth-feature-icon">📚</div>
+          <div class="auth-feature-text">
+            <h4>Structured Learning</h4>
+            <p>5 courses, 19 modules on India's defence ecosystem</p>
+          </div>
+        </div>
+        <div class="auth-feature">
+          <div class="auth-feature-icon">🎯</div>
+          <div class="auth-feature-text">
+            <h4>Interactive Quizzes</h4>
+            <p>MCQs with instant feedback and server-graded scores</p>
+          </div>
+        </div>
+        <div class="auth-feature">
+          <div class="auth-feature-icon">📊</div>
+          <div class="auth-feature-text">
+            <h4>Progress Tracking</h4>
+            <p>Personal dashboard synced to MongoDB — your data, always safe</p>
+          </div>
+        </div>
+        <div class="auth-feature">
+          <div class="auth-feature-icon">🏆</div>
+          <div class="auth-feature-text">
+            <h4>Achievements &amp; Badges</h4>
+            <p>Earn badges as you complete courses and ace quizzes</p>
+          </div>
+        </div>
+        <div class="auth-enrolled">
+          <div class="auth-enrolled-num" id="auth-enrolled-num">—</div>
+          <div class="auth-enrolled-label">LEARNERS ENROLLED GLOBALLY</div>
+        </div>
+      </div>
+
+      <!-- RIGHT PANEL -->
+      <div class="auth-right">
+        <div class="auth-tabs">
+          <button class="auth-tab active" id="tab-login" onclick="switchAuthTab('login')">Login</button>
+          <button class="auth-tab" id="tab-register" onclick="switchAuthTab('register')">Register</button>
+        </div>
+
+        <!-- LOGIN FORM -->
+        <div id="form-login" class="auth-form">
+          <h2>Welcome Back</h2>
+          <p>Sign in to continue your defence learning journey</p>
+          <div class="form-group">
+            <label>Email Address</label>
+            <input type="email" id="login-email" placeholder="you@example.com" autocomplete="email"/>
+            <div class="form-error" id="login-email-err"></div>
+          </div>
+          <div class="form-group">
+            <label>Password</label>
+            <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password"
+              onkeydown="if(event.key==='Enter')doLogin()"/>
+            <div class="form-error" id="login-pass-err"></div>
+          </div>
+          <button class="auth-submit" id="login-btn" onclick="doLogin()">Sign In</button>
+          <div class="auth-msg" id="login-msg"></div>
+          <div class="forgot-link">Forgot password? Contact admin.</div>
+        </div>
+
+        <!-- REGISTER FORM -->
+        <div id="form-register" class="auth-form hidden">
+          <h2>Create Account</h2>
+          <p>Join thousands of defence enthusiasts on DEFTECH</p>
+          <div class="form-group">
+            <label>Full Name</label>
+            <input type="text" id="reg-name" placeholder="Arjun Singh"/>
+            <div class="form-error" id="reg-name-err"></div>
+          </div>
+          <div class="form-group">
+            <label>Email Address</label>
+            <input type="email" id="reg-email" placeholder="you@example.com" autocomplete="email"/>
+            <div class="form-error" id="reg-email-err"></div>
+          </div>
+          <div class="form-group">
+            <label>Password</label>
+            <input type="password" id="reg-password" placeholder="Min. 6 characters"
+              onkeydown="if(event.key==='Enter')doRegister()"/>
+            <div class="form-error" id="reg-pass-err"></div>
+          </div>
+          <button class="auth-submit" id="reg-btn" onclick="doRegister()">Create Account</button>
+          <div class="auth-msg" id="reg-msg"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ═══ HOME PAGE ════════════════════════════════════════════ -->
+<div class="page" id="page-home">
+  <section class="hero">
+    <div class="orb orb1"></div><div class="orb orb2"></div>
+    <div class="hero-badge">India's Premier Defence Education Platform</div>
+    <h1 class="hero-title">
+      <span class="accent">DEFTECH</span><br/>
+      <span class="dim">Educational Portal</span><br/>
+      Defence Education &amp; Technology
+    </h1>
+    <p class="hero-tagline">Explore India's defence technology, DRDO research, missile systems, radar technology, and military innovation through structured modules, interactive quizzes, and real-time progress tracking.</p>
+    <div class="hero-ctas">
+      <button class="btn-primary" onclick="goPage('courses')">⚡ Explore Courses</button>
+      <button class="btn-secondary" onclick="goPage('about')">Learn More →</button>
+    </div>
+    <div class="hero-stats">
+      <div class="stat"><div class="stat-num" id="stat-enrolled">—</div><div class="stat-label">Learners Enrolled</div></div>
+      <div class="stat"><div class="stat-num">5</div><div class="stat-label">Courses</div></div>
+      <div class="stat"><div class="stat-num">19</div><div class="stat-label">Modules</div></div>
+      <div class="stat"><div class="stat-num">25+</div><div class="stat-label">Quiz Questions</div></div>
+    </div>
+  </section>
+
+  <section style="background:var(--bg2);border-top:1px solid var(--border);border-bottom:1px solid var(--border)">
+    <div class="container">
+      <div class="section-label">Platform Features</div>
+      <h2 class="section-title">Everything You Need to Master<br/><span class="text-green">Defence Technology</span></h2>
+      <p class="section-sub">A comprehensive learning ecosystem built for India's defence education landscape.</p>
+      <div class="features-grid">
+        <div class="feature-card"><div class="feature-icon">📚</div><div class="feature-title">Structured Learning</div><p class="feature-desc">Comprehensive modules on defence technology, DRDO research, weapons systems, and strategic doctrine — organized by topic and difficulty.</p><span class="feature-tag">19 MODULES AVAILABLE</span></div>
+        <div class="feature-card"><div class="feature-icon">🎯</div><div class="feature-title">Interactive Quizzes</div><p class="feature-desc">Server-graded MCQs with instant feedback and detailed explanations. Answers are validated on the server for integrity.</p><span class="feature-tag">25+ QUESTIONS</span></div>
+        <div class="feature-card"><div class="feature-icon">📊</div><div class="feature-title">Progress Tracking</div><p class="feature-desc">Real-time MongoDB-backed dashboard showing modules completed, quiz scores, completion percentages, and earned achievements.</p><span class="feature-tag">MONGODB BACKED</span></div>
+        <div class="feature-card"><div class="feature-icon">🏆</div><div class="feature-title">Gamification &amp; Badges</div><p class="feature-desc">Earn achievement badges for completing modules and scoring high on quizzes. Level up your defence knowledge profile.</p><span class="feature-tag">8 ACHIEVEMENTS</span></div>
+        <div class="feature-card"><div class="feature-icon">🔍</div><div class="feature-title">Search &amp; Filter</div><p class="feature-desc">Find courses instantly by category, difficulty level, or keywords. Tailored navigation for every learner's pace.</p><span class="feature-tag">SMART FILTERING</span></div>
+        <div class="feature-card"><div class="feature-icon">🛡️</div><div class="feature-title">India-Focused Content</div><p class="feature-desc">Content curated specifically for India's defence ecosystem — DRDO, Agni, BrahMos, AESA radar, AMCA, and FINSAS.</p><span class="feature-tag">INDIA-SPECIFIC</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="container">
+      <div class="section-label">Featured Courses</div>
+      <h2 class="section-title">Start Learning <span class="text-green">Today</span></h2>
+      <div class="courses-grid" id="home-courses-preview"></div>
+      <div style="text-align:center;margin-top:2.5rem">
+        <button class="btn-primary" onclick="goPage('courses')">View All Courses →</button>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="footer-inner">
+      <div><div class="footer-brand">⚡ DEFTECH</div><p class="footer-desc">India's premier online portal for defence education and technology. Bridging the gap between military knowledge and civilian understanding.</p></div>
+      <div class="footer-col"><h4>Navigate</h4><a onclick="goPage('home')">Home</a><a onclick="goPage('about')">About</a><a onclick="goPage('courses')">Courses</a><a onclick="goPage('dashboard')">Dashboard</a></div>
+      <div class="footer-col"><h4>Topics</h4><a>DRDO Research</a><a>Missile Systems</a><a>Radar Technology</a><a>Military Strategy</a></div>
+    </div>
+    <div class="footer-bottom" style="max-width:1200px;margin:0 auto">
+      <span>© 2028 DefTech Learning Portal. Educational purposes only.</span>
+      <div class="footer-status"><span class="status-dot"></span>All Systems Operational</div>
+    </div>
+  </footer>
+</div>
+
+<!-- ═══ COURSES PAGE ══════════════════════════════════════════ -->
+<div class="page" id="page-courses">
+  <div class="page-header">
+    <div class="container">
+      <div>
+        <div class="section-label">Course Catalog</div>
+        <h1 class="section-title">All <span class="text-green">Courses</span></h1>
+        <p class="section-sub">Structured modules covering India's defence ecosystem.</p>
+        <div class="filter-bar" id="filter-bar">
+          <button class="filter-btn active" onclick="filterCourses('all',this)">All</button>
+          <button class="filter-btn" onclick="filterCourses('Beginner',this)">Beginner</button>
+          <button class="filter-btn" onclick="filterCourses('Intermediate',this)">Intermediate</button>
+          <button class="filter-btn" onclick="filterCourses('Advanced',this)">Advanced</button>
+          <button class="filter-btn" onclick="filterCourses('Defence Basics',this)">Defence Basics</button>
+          <button class="filter-btn" onclick="filterCourses('Space',this)">Missiles</button>
+          <button class="filter-btn" onclick="filterCourses('Electronics',this)">Electronics</button>
+        </div>
+      </div>
+      <div><div class="search-box"><span>🔍</span><input type="text" placeholder="Search courses..." id="course-search" oninput="searchCourses(this.value)"/></div></div>
+    </div>
+  </div>
+  <div class="container" style="padding:2.5rem 2rem">
+    <div class="courses-grid" id="courses-grid"></div>
+  </div>
+</div>
+
+<!-- ═══ COURSE DETAIL PAGE ════════════════════════════════════ -->
+<div class="page" id="page-course-detail">
+  <div class="course-detail-header">
+    <div class="container">
+      <button class="back-btn" onclick="goPage('courses')">← Back to Courses</button>
+      <div class="course-detail-layout">
+        <div>
+          <div class="course-info-badge" id="detail-badges"></div>
+          <h1 class="course-detail-title" id="detail-title"></h1>
+          <p class="course-detail-desc" id="detail-desc"></p>
+        </div>
+        <div class="course-sidebar">
+          <div id="detail-sidebar-stats"></div>
+          <button class="start-btn" onclick="startQuiz()">▶ Start Quiz</button>
+          <button class="btn-secondary" style="width:100%;margin-top:.75rem" onclick="goPage('dashboard')">View Progress →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modules-section">
+    <div class="container">
+      <div class="section-label">Course Content</div>
+      <h2 class="section-title">Module <span class="text-green">Breakdown</span></h2>
+      <div class="module-list" id="module-list"></div>
+      <div class="quiz-cta-box mt2">
+        <h3>🎯 Ready to Test Your Knowledge?</h3>
+        <p style="color:var(--text2);margin-bottom:1.25rem;font-size:.9rem">Take the quiz and your score is saved to your personal dashboard.</p>
+        <button class="btn-primary" onclick="startQuiz()">Start Quiz Now</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODULE READER PAGE ══════════════════════════════════ -->
+<div class="page" id="page-module">
+  <div id="module-content" style="min-height:100vh"></div>
+</div>
+
+<!-- ═══ QUIZ PAGE ════════════════════════════════════════════ -->
+<div class="page" id="page-quiz">
+  <div class="quiz-wrapper">
+    <div class="quiz-header">
+      <div>
+        <div class="text-mono" style="font-size:.65rem;color:var(--text3);letter-spacing:.15em">QUIZ IN PROGRESS</div>
+        <div style="font-family:var(--font-display);font-weight:700;font-size:.9rem" id="quiz-course-title"></div>
+      </div>
+      <div style="text-align:right">
+        <div class="text-mono" style="font-size:.65rem;color:var(--text3)">Question</div>
+        <div style="font-family:var(--font-display);font-weight:700;color:var(--green)" id="quiz-counter"></div>
+      </div>
+    </div>
+    <div class="quiz-progress-bar"><div class="quiz-progress-fill" id="quiz-progress-fill" style="width:0%"></div></div>
+    <div style="margin-top:2rem" id="quiz-content"></div>
+  </div>
+</div>
+
+<!-- ═══ DASHBOARD PAGE ═══════════════════════════════════════ -->
+<div class="page" id="page-dashboard">
+  <div class="page-header">
+    <div class="container">
+      <div class="section-label">Your Learning Hub</div>
+      <h1 class="section-title">Dashboard <span class="text-green">Overview</span></h1>
+    </div>
+  </div>
+  <div class="container" style="padding:2.5rem 2rem">
+    <!-- Enrollment Banner -->
+    <div style="background:linear-gradient(135deg,rgba(0,255,136,.05),rgba(0,238,255,.03));border:1px solid var(--border2);border-radius:6px;padding:1.25rem 1.5rem;display:flex;align-items:center;gap:1.5rem;margin-bottom:2rem;flex-wrap:wrap">
+      <div>
+        <div style="font-family:var(--font-display);font-size:2rem;font-weight:900;color:var(--green)" id="dash-enrolled-num">—</div>
+        <div style="font-family:var(--font-mono);font-size:.6rem;color:var(--text3);letter-spacing:.12em">TOTAL LEARNERS ENROLLED</div>
+      </div>
+      <div style="font-size:.82rem;color:var(--text2)">Join a growing community of defence enthusiasts building knowledge on DEFTECH.</div>
+    </div>
+    <!-- Stats -->
+    <div class="dashboard-grid" id="dash-stats"></div>
+    <!-- Two col -->
+    <div class="dash-two-col">
+      <div class="dash-panel"><h3>📈 Course Progress</h3><div id="dash-progress"></div></div>
+      <div class="dash-panel"><h3>📝 Quiz History</h3><div id="dash-quiz-history"></div></div>
+    </div>
+    <!-- Achievements -->
+    <div class="dash-panel mt2"><h3>🏆 Achievements</h3><div class="achievement-grid" id="dash-achievements"></div></div>
+  </div>
+</div>
+
+<!-- ═══ ABOUT PAGE ════════════════════════════════════════════ -->
+<div class="page" id="page-about">
+  <div class="page-header">
+    <div class="container">
+      <div class="section-label">About DEFTECH</div>
+      <h1 class="section-title">India's <span class="text-green">Defence Knowledge</span> Platform</h1>
+    </div>
+  </div>
+  <section>
+    <div class="container">
+      <div style="max-width:800px">
+        <p style="font-size:1.05rem;color:var(--text2);line-height:1.8;margin-bottom:1.5rem">
+          DEFTECH is India's premier online educational portal dedicated to defence education and technology.
+          We bridge the gap between military knowledge and civilian understanding — offering structured,
+          accurate, and engaging content for students, researchers, and professionals.
+        </p>
+        <p style="font-size:.92rem;color:var(--text2);line-height:1.8">
+          Our platform covers DRDO research, missile systems, radar technology, military rank structures,
+          and the future of Indian defence innovation — all curated by defence enthusiasts and subject-matter experts.
+        </p>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1.5rem;margin-top:3rem">
+        <div class="dash-panel"><h3>🎯 Our Mission</h3><p style="font-size:.83rem;color:var(--text2);line-height:1.7">To democratize knowledge about India's defence ecosystem and empower the next generation of defence professionals, researchers, and informed citizens.</p></div>
+        <div class="dash-panel"><h3>🛡️ Our Vision</h3><p style="font-size:.83rem;color:var(--text2);line-height:1.7">A nation where every citizen understands and appreciates the technological prowess and strategic depth of India's armed forces and defence research.</p></div>
+        <div class="dash-panel"><h3>📖 Our Content</h3><p style="font-size:.83rem;color:var(--text2);line-height:1.7">Rigorously researched, publicly available information structured into digestible learning modules with interactive assessments and progress tracking.</p></div>
+        <div class="dash-panel"><h3>🔬 DRDO Focus</h3><p style="font-size:.83rem;color:var(--text2);line-height:1.7">Special emphasis on DRDO's landmark programmes — Agni, Prithvi, BrahMos, AESA radar, ATAGS howitzer, and emerging defence technologies.</p></div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem;margin-top:3rem;padding:2rem;background:var(--panel);border:1px solid var(--border);border-radius:6px">
+        <div style="text-align:center"><div style="font-family:var(--font-display);font-size:1.8rem;font-weight:900;color:var(--green)">5</div><div style="font-family:var(--font-mono);font-size:.65rem;color:var(--text3);letter-spacing:.15em;margin-top:.25rem">COURSES</div></div>
+        <div style="text-align:center"><div style="font-family:var(--font-display);font-size:1.8rem;font-weight:900;color:var(--green)">19</div><div style="font-family:var(--font-mono);font-size:.65rem;color:var(--text3);letter-spacing:.15em;margin-top:.25rem">MODULES</div></div>
+        <div style="text-align:center"><div style="font-family:var(--font-display);font-size:1.8rem;font-weight:900;color:var(--green)">25+</div><div style="font-family:var(--font-mono);font-size:.65rem;color:var(--text3);letter-spacing:.15em;margin-top:.25rem">QUIZ QUESTIONS</div></div>
+        <div style="text-align:center"><div style="font-family:var(--font-display);font-size:1.8rem;font-weight:900;color:var(--green)" id="about-enrolled">1,247+</div><div style="font-family:var(--font-mono);font-size:.65rem;color:var(--text3);letter-spacing:.15em;margin-top:.25rem">LEARNERS ENROLLED</div></div>
+      </div>
+
+      <div style="margin-top:3rem">
+        <div class="section-label">India's Defence Journey</div>
+        <h2 style="font-family:var(--font-display);font-size:clamp(1.4rem,3vw,2rem);font-weight:700;margin:1rem 0 2rem">Key <span class="text-green">Milestones</span></h2>
+        <div style="display:flex;flex-direction:column;gap:0">
+          <div style="display:flex;gap:1.5rem;padding-bottom:2rem;position:relative">
+            <div style="position:absolute;left:19px;top:40px;bottom:0;width:1px;background:var(--border)"></div>
+            <div style="width:40px;height:40px;flex-shrink:0;background:var(--panel);border:2px solid var(--border2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1rem">🚀</div>
+            <div><div style="font-family:var(--font-mono);font-size:.65rem;color:var(--green-dim);margin-bottom:.25rem">1958</div><div style="font-family:var(--font-display);font-size:.8rem;font-weight:700;color:var(--text);margin-bottom:.35rem">DRDO Established</div><p style="font-size:.83rem;color:var(--text2);line-height:1.6">Defence Research and Development Organisation founded to drive self-reliance in defence technology.</p></div>
+          </div>
+          <div style="display:flex;gap:1.5rem;padding-bottom:2rem;position:relative">
+            <div style="position:absolute;left:19px;top:40px;bottom:0;width:1px;background:var(--border)"></div>
+            <div style="width:40px;height:40px;flex-shrink:0;background:var(--panel);border:2px solid var(--border2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1rem">☢️</div>
+            <div><div style="font-family:var(--font-mono);font-size:.65rem;color:var(--green-dim);margin-bottom:.25rem">1998</div><div style="font-family:var(--font-display);font-size:.8rem;font-weight:700;color:var(--text);margin-bottom:.35rem">Pokhran-II Nuclear Tests</div><p style="font-size:.83rem;color:var(--text2);line-height:1.6">Operation Shakti — India demonstrated thermonuclear and fission device capability, ushering in a new strategic era.</p></div>
+          </div>
+          <div style="display:flex;gap:1.5rem;padding-bottom:2rem;position:relative">
+            <div style="position:absolute;left:19px;top:40px;bottom:0;width:1px;background:var(--border)"></div>
+            <div style="width:40px;height:40px;flex-shrink:0;background:var(--panel);border:2px solid var(--border2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1rem">🎯</div>
+            <div><div style="font-family:var(--font-mono);font-size:.65rem;color:var(--green-dim);margin-bottom:.25rem">2001</div><div style="font-family:var(--font-display);font-size:.8rem;font-weight:700;color:var(--text);margin-bottom:.35rem">BrahMos Missile</div><p style="font-size:.83rem;color:var(--text2);line-height:1.6">Joint India-Russia supersonic cruise missile — the world's fastest operational cruise missile at Mach 2.8.</p></div>
+          </div>
+          <div style="display:flex;gap:1.5rem;padding-bottom:2rem;position:relative">
+            <div style="position:absolute;left:19px;top:40px;bottom:0;width:1px;background:var(--border)"></div>
+            <div style="width:40px;height:40px;flex-shrink:0;background:var(--panel);border:2px solid var(--border2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1rem">⭐</div>
+            <div><div style="font-family:var(--font-mono);font-size:.65rem;color:var(--green-dim);margin-bottom:.25rem">2019</div><div style="font-family:var(--font-display);font-size:.8rem;font-weight:700;color:var(--text);margin-bottom:.35rem">Mission Shakti — ASAT Test</div><p style="font-size:.83rem;color:var(--text2);line-height:1.6">India became the 4th country to demonstrate anti-satellite capability, shooting down a live satellite in LEO.</p></div>
+          </div>
+          <div style="display:flex;gap:1.5rem;padding-bottom:2rem">
+            <div style="width:40px;height:40px;flex-shrink:0;background:var(--panel);border:2px solid var(--border2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1rem">✈️</div>
+            <div><div style="font-family:var(--font-mono);font-size:.65rem;color:var(--green-dim);margin-bottom:.25rem">2024+</div><div style="font-family:var(--font-display);font-size:.8rem;font-weight:700;color:var(--text);margin-bottom:.35rem">AMCA &amp; Future Systems</div><p style="font-size:.83rem;color:var(--text2);line-height:1.6">Advanced Medium Combat Aircraft, FINSAS, directed energy weapons, and hypersonic glide vehicles under development.</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="footer-inner">
+      <div><div class="footer-brand">⚡ DEFTECH</div><p class="footer-desc">India's premier online portal for defence education and technology.</p></div>
+      <div class="footer-col"><h4>Navigate</h4><a onclick="goPage('home')">Home</a><a onclick="goPage('courses')">Courses</a><a onclick="goPage('dashboard')">Dashboard</a></div>
+      <div class="footer-col"><h4>Topics</h4><a>DRDO Research</a><a>Missile Systems</a><a>Radar Technology</a><a>Military Strategy</a></div>
+    </div>
+    <div class="footer-bottom" style="max-width:1200px;margin:0 auto">
+      <span>© 2028 DefTech Learning Portal. Educational purposes only.</span>
+      <div class="footer-status"><span class="status-dot"></span>All Systems Operational</div>
+    </div>
+  </footer>
+</div>
+
+<script src="/js/app.js"></script>
+</body>
+</html>
