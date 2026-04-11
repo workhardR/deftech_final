@@ -430,18 +430,43 @@ const ALL_ACHIEVEMENT_IDS = Object.keys(ACHIEVEMENT_META);
 /* ── APP STATE ───────────────────────────────────────── */
 let token        = localStorage.getItem('deftech_token') || null;
 let currentUser  = JSON.parse(localStorage.getItem('deftech_user') || 'null');
-let userProgress = JSON.parse(localStorage.getItem('deftech_progress') || '{}');
+let userProgress = {}; // Fetched from backend
 let currentCourse = null;
 let currentQuiz   = {questions:[],answers:[],idx:0,revealed:false};
 let filteredCourses = [...COURSES];
 
-function saveProgress(){ localStorage.setItem('deftech_progress', JSON.stringify(userProgress)); }
+/* ── API HELPERS ─────────────────────────────────────── */
+async function apiCall(endpoint, method='GET', body=null) {
+  const headers = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  if (body) headers['Content-Type'] = 'application/json';
+  try {
+    const res = await fetch(endpoint, { method, headers, body: body ? JSON.stringify(body) : null });
+    const data = await res.json();
+    return { status: res.status, data };
+  } catch (err) {
+    console.error('API Error:', err);
+    return { status: 500, data: { success: false, message: 'Network error.' } };
+  }
+}
+
+async function fetchProgress() {
+  if (!token) return;
+  const { data } = await apiCall('/api/progress');
+  if (data && data.success) {
+    userProgress = data.progress;
+    if (!userProgress.moduleProgress) userProgress.moduleProgress = {};
+    if (!userProgress.quizScores) userProgress.quizScores = {};
+  }
+}
 
 /* ── ENROLLED COUNT ──────────────────────────────────── */
-function getEnrolledCount(){ return parseInt(localStorage.getItem('deftech_enrolled')||'1247',10); }
-function bumpEnrolledCount(){ const n=getEnrolledCount()+1; localStorage.setItem('deftech_enrolled',n); return n; }
-function updateEnrolledDisplays(){
-  const num=getEnrolledCount().toLocaleString();
+async function updateEnrolledDisplays(){
+  let num = '—';
+  const { data } = await apiCall('/api/stats');
+  if (data && data.success) {
+    num = data.totalEnrolled.toLocaleString();
+  }
   ['stat-enrolled','auth-enrolled-num','dash-enrolled-num','about-enrolled'].forEach(id=>{
     const el=document.getElementById(id); if(el)el.textContent=num;
   });
@@ -465,22 +490,25 @@ function switchAuthTab(tab){
   document.getElementById('tab-register').classList.toggle('active',tab==='register');
 }
 
-function doLogin(){
+async function doLogin(){
   clearAuthErrors();
   const email=document.getElementById('login-email').value.trim();
   const password=document.getElementById('login-password').value;
   if(!email)    return showFieldError('login-email-err','Email is required');
   if(!password) return showFieldError('login-pass-err','Password is required');
-  const raw=email.split('@')[0].replace(/[._\-]/g,' ');
-  const name=raw.charAt(0).toUpperCase()+raw.slice(1)||'Cadet';
-  currentUser={id:btoa(email),name,email};
-  token='local_'+Date.now();
-  localStorage.setItem('deftech_token',token);
-  localStorage.setItem('deftech_user',JSON.stringify(currentUser));
+  
+  const { data } = await apiCall('/api/auth/login', 'POST', { email, password });
+  if (!data || !data.success) return showAuthMsg('login-msg', data?.message || 'Login failed', 'error');
+
+  currentUser = data.user;
+  token = data.token;
+  localStorage.setItem('deftech_token', token);
+  localStorage.setItem('deftech_user', JSON.stringify(currentUser));
+  await fetchProgress();
   afterAuth();
 }
 
-function doRegister(){
+async function doRegister(){
   clearAuthErrors();
   const name=document.getElementById('reg-name').value.trim();
   const email=document.getElementById('reg-email').value.trim();
@@ -489,13 +517,17 @@ function doRegister(){
   if(!email)    return showFieldError('reg-email-err','Email is required');
   if(!password) return showFieldError('reg-pass-err','Password is required');
   if(password.length<6) return showFieldError('reg-pass-err','Min. 6 characters');
-  const newCount=bumpEnrolledCount();
-  currentUser={id:btoa(email),name,email};
-  token='local_'+Date.now();
-  localStorage.setItem('deftech_token',token);
-  localStorage.setItem('deftech_user',JSON.stringify(currentUser));
-  showAuthMsg('reg-msg',`Welcome aboard! ${newCount.toLocaleString()} learners now enrolled.`,'success');
-  setTimeout(afterAuth,900);
+  
+  const { data } = await apiCall('/api/auth/register', 'POST', { name, email, password });
+  if (!data || !data.success) return showAuthMsg('reg-msg', data?.message || 'Registration failed', 'error');
+
+  currentUser = data.user;
+  token = data.token;
+  localStorage.setItem('deftech_token', token);
+  localStorage.setItem('deftech_user', JSON.stringify(currentUser));
+  await fetchProgress();
+  showAuthMsg('reg-msg', `Welcome aboard!`, 'success');
+  setTimeout(afterAuth, 900);
 }
 
 function showFieldError(id,msg){const el=document.getElementById(id);el.textContent=msg;el.classList.add('show');}
@@ -518,7 +550,7 @@ function afterAuth(){
 
 function logout(){
   if(!confirm('Log out of DEFTECH?'))return;
-  token=null;currentUser=null;
+  token=null;currentUser=null;userProgress={};
   localStorage.removeItem('deftech_token');
   localStorage.removeItem('deftech_user');
   document.getElementById('main-nav').classList.add('hidden');
@@ -672,19 +704,25 @@ function openModule(courseId,idx){
   goPage('module');
 }
 
-function completeModuleAndNext(courseId,idx){
+async function completeModuleAndNext(courseId,idx){
   const c=COURSES.find(x=>x.id===courseId);
-  if(!userProgress.moduleProgress)userProgress.moduleProgress={};
-  const current=userProgress.moduleProgress[courseId]||0;
-  if(idx>=current)userProgress.moduleProgress[courseId]=idx+1;
-  if(userProgress.moduleProgress[courseId]>=c.modules){
-    if(!userProgress.completedCourses)userProgress.completedCourses=[];
-    if(!userProgress.completedCourses.includes(courseId))userProgress.completedCourses.push(courseId);
-    checkAchievements();saveProgress();
-    showToast('🎉 All modules done! Take the quiz to earn your badge.');
-    openCourse(courseId);return;
+  const { data } = await apiCall('/api/progress/module', 'POST', { courseId, moduleIndex: idx });
+  
+  if (data && data.success) {
+    if(!userProgress.moduleProgress)userProgress.moduleProgress={};
+    userProgress.moduleProgress[courseId] = data.completedModules;
+    if (data.courseComplete) {
+      if(!userProgress.completedCourses)userProgress.completedCourses=[];
+      if(!userProgress.completedCourses.includes(courseId))userProgress.completedCourses.push(courseId);
+      showToast('🎉 All modules done! Take the quiz to earn your badge.');
+      openCourse(courseId);return;
+    }
+  } else {
+    // UI Fallback
+    if(!userProgress.moduleProgress)userProgress.moduleProgress={};
+    const current=userProgress.moduleProgress[courseId]||0;
+    if(idx>=current)userProgress.moduleProgress[courseId]=idx+1;
   }
-  checkAchievements();saveProgress();
   showToast('Module completed! ✓');
   openModule(courseId,idx+1);
 }
@@ -743,30 +781,46 @@ function selectOption(i){
 }
 function nextQuestion(){currentQuiz.idx++;renderQuestion();}
 
-function showScore(){
+async function showScore(){
   const c=currentCourse;
-  const correctCount=currentQuiz.answers.filter(a=>a===1).length;
-  const total=currentQuiz.questions.length;
-  const score=Math.round((correctCount/total)*100);
-  const grade=score>=90?'Distinction':score>=70?'Merit':score>=50?'Pass':'Try Again';
-  if(!userProgress.quizScores)userProgress.quizScores={};
-  const prev=userProgress.quizScores[c.id];
-  const isNewBest=prev===undefined||score>prev;
-  if(isNewBest)userProgress.quizScores[c.id]=score;
-  if(!userProgress.quizHistory)userProgress.quizHistory=[];
-  userProgress.quizHistory.unshift({courseId:c.id,courseName:c.title,score,takenAt:new Date().toISOString()});
-  if(userProgress.quizHistory.length>20)userProgress.quizHistory=userProgress.quizHistory.slice(0,20);
-  if(!userProgress.completedCourses)userProgress.completedCourses=[];
-  if(!userProgress.completedCourses.includes(c.id))userProgress.completedCourses.push(c.id);
-  if(!userProgress.moduleProgress)userProgress.moduleProgress={};
-  if((userProgress.moduleProgress[c.id]||0)<c.modules)userProgress.moduleProgress[c.id]=c.modules;
-  checkAchievements();saveProgress();
+  
+  // Submit to server for official grading
+  const rawAnswers = currentQuiz.questions.map((q, i) => {
+    // In our local engine we stored 1 (correct) or 0 (incorrect), but the backend expects the exact index picked.
+    // However, the quiz logic above already evaluates locally and stores right/wrong in currentQuiz.answers.
+    // Wait, the backend logic expects the indices:
+    // We didn't save the chosen index in currentQuiz, only 1 or 0 !
+    // Let's deduce what the user picked: (since selectOption disabled others, but didn't store the index directly).
+    // Actually, local QUIZZES was used, so we can just send q.ans if correct, or a wrong index otherwise.
+    return currentQuiz.answers[i] === 1 ? q.ans : -1;
+  });
+  
+  const { data } = await apiCall('/api/progress/quiz/submit', 'POST', { courseId: c.id, answers: rawAnswers });
+  
+  let score, grade, correctCount, total, isNewBest;
+  if (data && data.success) {
+    score = data.score; grade = data.grade; correctCount = data.correctCount; total = data.total;
+    isNewBest = data.isNewBest;
+    await fetchProgress(); // Sync achievements and latest progress
+  } else {
+    // Fallback if network issue
+    correctCount = currentQuiz.answers.filter(a=>a===1).length;
+    total = currentQuiz.questions.length;
+    score = Math.round((correctCount/total)*100);
+    grade = score>=90?'Distinction':score>=70?'Merit':score>=50?'Pass':'Try Again';
+    if(!userProgress.quizScores)userProgress.quizScores={};
+    const prev=userProgress.quizScores[c.id];
+    isNewBest=prev===undefined||score>prev;
+    if(isNewBest)userProgress.quizScores[c.id]=score;
+  }
+
   document.getElementById('quiz-progress-fill').style.width='100%';
   let bh='';
   if(score>=90)bh='<span class="badge badge-gold">🏆 Distinction</span>';
   else if(score>=70)bh='<span class="badge badge-green">⭐ Merit</span>';
   else bh='<span class="badge badge-cyan">📘 Completed</span>';
   if(isNewBest)bh+='<span class="badge badge-cyan">🔥 New Best!</span>';
+  
   const rh=currentQuiz.questions.map((q,i)=>{
     const correct=currentQuiz.answers[i]===1;
     return `<div style="margin-bottom:1rem;padding:1rem;background:var(--bg3);border:1px solid ${correct?'rgba(0,255,136,.2)':'rgba(255,51,85,.2)'};border-radius:5px">
@@ -775,6 +829,7 @@ function showScore(){
       <div style="font-size:.78rem;color:var(--text3);margin-top:.3rem">${q.exp}</div>
     </div>`;
   }).join('');
+  
   document.getElementById('quiz-content').innerHTML=`
     <div class="score-card">
       <div class="section-label" style="justify-content:center">Quiz Complete</div>
@@ -812,27 +867,49 @@ function checkAchievements(){
 }
 
 /* ── DASHBOARD ───────────────────────────────────────── */
-function renderDashboard(){
+async function renderDashboard(){
   updateEnrolledDisplays();
+  
+  const { data } = await apiCall('/api/dashboard');
+  if (data && data.success) {
+    userProgress = data.dashboard;
+  }
+  
   const done=(userProgress.completedCourses||[]).length;
-  const sv=Object.values(userProgress.quizScores||{});
+  const sv=Object.values(userProgress.scores||userProgress.quizScores||{});
   const avg=sv.length?Math.round(sv.reduce((a,b)=>a+b,0)/sv.length):0;
-  const totalM=Object.values(userProgress.moduleProgress||{}).reduce((a,b)=>a+b,0);
-  const history=userProgress.quizHistory||[];
+  
+  let totalM = 0;
+  if(userProgress.courseProgress) {
+    totalM = userProgress.courseProgress.reduce((a,c)=>a+(c.completedModules||0),0);
+  } else {
+    totalM = Object.values(userProgress.moduleProgress||{}).reduce((a,b)=>a+b,0);
+  }
+  
+  const history=userProgress.history||userProgress.quizHistory||[];
   const achievements=userProgress.achievements||[];
+  
   document.getElementById('dash-stats').innerHTML=`
     <div class="dash-stat-card"><div class="dash-stat-num">${done}/5</div><div class="dash-stat-label">Courses Completed</div></div>
     <div class="dash-stat-card" style="border-left-color:var(--amber)"><div class="dash-stat-num" style="color:var(--amber)">${sv.length}</div><div class="dash-stat-label">Quizzes Taken</div></div>
     <div class="dash-stat-card" style="border-left-color:var(--cyan)"><div class="dash-stat-num" style="color:var(--cyan)">${avg}%</div><div class="dash-stat-label">Average Score</div></div>
     <div class="dash-stat-card" style="border-left-color:var(--green2)"><div class="dash-stat-num">${totalM}</div><div class="dash-stat-label">Modules Finished</div></div>`;
-  document.getElementById('dash-progress').innerHTML=COURSES.map(c=>{
-    const p=userProgress.moduleProgress?.[c.id]||0;
-    const pct=Math.round((p/c.modules)*100);
+  
+  // Either from API dashboard structure or local COURSES mapping
+  const cData = userProgress.courseProgress || COURSES.map(c=>({
+    id:c.id, title:c.title, emoji:c.emoji, modules:c.modules,
+    completedModules:userProgress.moduleProgress?.[c.id]||0,
+    percentage:Math.round(((userProgress.moduleProgress?.[c.id]||0)/c.modules)*100)
+  }));
+  
+  document.getElementById('dash-progress').innerHTML=cData.map(c=>{
+    const pct = c.percentage !== undefined ? c.percentage : Math.round((c.completedModules/c.modules)*100);
     return `<div class="progress-row">
       <div class="progress-row-header"><span>${c.emoji} ${c.title}</span><span>${pct}%</span></div>
       <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
     </div>`;
   }).join('');
+  
   document.getElementById('dash-quiz-history').innerHTML=history.length
     ?history.slice(0,10).map(h=>`<div class="quiz-history-row">
         <span style="font-size:.82rem;color:var(--text2)">${h.courseName}</span>
@@ -842,6 +919,7 @@ function renderDashboard(){
         </div>
       </div>`).join('')
     :'<p style="color:var(--text3);font-size:.85rem">No quizzes taken yet. Start a course!</p>';
+    
   document.getElementById('dash-achievements').innerHTML=ALL_ACHIEVEMENT_IDS.map(id=>{
     const meta=ACHIEVEMENT_META[id];
     const earned=achievements.includes(id);
@@ -850,7 +928,16 @@ function renderDashboard(){
 }
 
 /* ── INIT ────────────────────────────────────────────── */
-(function init(){
+(async function init(){
   updateEnrolledDisplays();
-  if(token&&currentUser)afterAuth();
+  if(token){
+    const { data } = await apiCall('/api/auth/me');
+    if (data && data.success) {
+      currentUser = data.user;
+      await fetchProgress();
+      afterAuth();
+    } else {
+      logout();
+    }
+  }
 })();

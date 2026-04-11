@@ -10,9 +10,10 @@ const JWT_SECRET = process.env.JWT_SECRET || 'deftech_jwt_secret_change_in_produ
 // POST /api/auth/register
 router.post('/register', async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    let { name, email, password } = req.body;
     if (!name || !email || !password)
       return res.status(400).json({ success: false, message: 'Name, email, and password are required.' });
+    email = email.toLowerCase().trim();
     if (password.length < 6)
       return res.status(400).json({ success: false, message: 'Password must be at least 6 characters.' });
 
@@ -42,9 +43,10 @@ router.post('/register', async (req, res) => {
 // POST /api/auth/login
 router.post('/login', async (req, res) => {
   try {
-    const { email, password } = req.body;
+    let { email, password } = req.body;
     if (!email || !password)
       return res.status(400).json({ success: false, message: 'Email and password are required.' });
+    email = email.toLowerCase().trim();
 
     const user = await User.findOne({ email });
     if (!user || !(await bcrypt.compare(password, user.password)))
